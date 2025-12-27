@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Categories</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+<h2 class="text-2xl font-bold mb-4">Category Management</h2>
+
+
+<form id="categoryForm" class="bg-white p-4 rounded shadow mb-6 flex gap-2">
+  <input type="text" id="name" placeholder="Category Name"
+    class="border p-2 w-full rounded" required>
+  <button class="bg-blue-600 text-white px-4 py-2 rounded" id="submitBtn">Add</button>
+  <button type="button" id="cancelBtn" class="bg-gray-400 text-white px-4 py-2 rounded hidden">Cancel</button>
+</form>
+
+
+<table class="w-full bg-white rounded-lg shadow overflow-hidden">
+  <thead class="bg-blue-600 text-white">
+    <tr>
+      <th class="p-3 text-left">ID</th>
+      <th class="p-3 text-left">Name</th>
+      <th class="p-3 text-center">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="categoryTable">
+  
+  </tbody>
+</table>
+
+<script>
+const nameInput = document.getElementById('name');
+const table = document.getElementById('categoryTable');
+const form = document.getElementById('categoryForm');
+const submitBtn = document.getElementById('submitBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+
+let editId = null; 
+
+
+async function loadCategories() {
+  const res = await fetch('/api/categories');
+  const data = await res.json();
+  table.innerHTML = '';
+
+  data.forEach((c, index) => {
+    table.innerHTML += `
+      <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 border-b">
+        <td class="p-3">${c.category_id}</td>
+        <td class="p-3">${c.name}</td>
+        <td class="p-3 text-center space-x-2">
+          <button onclick="editCat(${c.category_id}, '${c.name}')"
+            class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded transition">Edit</button>
+          <button onclick="deleteCat(${c.category_id})"
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+
+form.onsubmit = async e => {
+  e.preventDefault();
+  const name = nameInput.value.trim();
+  if (!name) return alert('Enter category name');
+
+  if (editId) {
+    
+    await fetch(`/api/categories/${editId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    editId = null;
+    submitBtn.textContent = 'Add';
+    cancelBtn.classList.add('hidden');
+  } else {
+    
+    await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+  }
+
+  nameInput.value = '';
+  loadCategories();
+};
+
+cancelBtn.onclick = () => {
+  editId = null;
+  nameInput.value = '';
+  submitBtn.textContent = 'Add';
+  cancelBtn.classList.add('hidden');
+};
+
+
+function editCat(id, name) {
+  editId = id;
+  nameInput.value = name;
+  submitBtn.textContent = 'Update';
+  cancelBtn.classList.remove('hidden');
+  nameInput.focus();
+}
+
+async function deleteCat(id){
+  if(!confirm('Are you sure?')) return;
+  await fetch(`/api/categories/${id}`, { method:'DELETE' });
+  loadCategories();
+}
+
+
+loadCategories();
+</script>
+
+</body>
+</html>

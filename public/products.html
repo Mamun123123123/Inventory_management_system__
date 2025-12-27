@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Products</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+<h2 class="text-2xl font-bold mb-4">Product Management</h2>
+
+
+<form id="productForm" class="bg-white p-4 rounded shadow mb-6 grid gap-3">
+  <input type="text" id="name" placeholder="Product Name" class="border p-2 rounded" required>
+  <input type="number" id="quantity" placeholder="Quantity" class="border p-2 rounded" required>
+  <input type="number" id="price" placeholder="Price" class="border p-2 rounded" required>
+  <input type="number" id="category_id" placeholder="Category ID" class="border p-2 rounded" required>
+  <div class="flex gap-2">
+    <button type="submit" id="submitBtn" class="bg-green-600 text-white px-4 py-2 rounded">Add Product</button>
+    <button type="button" id="cancelBtn" class="bg-gray-400 text-white px-4 py-2 rounded hidden">Cancel</button>
+  </div>
+</form>
+
+
+<table class="w-full bg-white rounded-lg shadow overflow-hidden">
+  <thead class="bg-green-600 text-white">
+    <tr>
+      <th class="p-3 text-left">ID</th>
+      <th class="p-3 text-left">Name</th>
+      <th class="p-3 text-left">Quantity</th>
+      <th class="p-3 text-left">Price</th>
+      <th class="p-3 text-left">Category ID</th>
+      <th class="p-3 text-center">Actions</th>
+    </tr>
+  </thead>
+  <tbody id="productTable"></tbody>
+</table>
+
+<script>
+const nameInput = document.getElementById('name');
+const quantityInput = document.getElementById('quantity');
+const priceInput = document.getElementById('price');
+const categoryInput = document.getElementById('category_id');
+const table = document.getElementById('productTable');
+const form = document.getElementById('productForm');
+const submitBtn = document.getElementById('submitBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+
+let editId = null;
+
+
+async function loadProducts() {
+  const res = await fetch('/api/products');
+  const data = await res.json();
+  table.innerHTML = '';
+
+  data.forEach((p, index) => {
+    table.innerHTML += `
+      <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 ${p.quantity < 5 ? 'bg-red-100' : ''} border-b">
+        <td class="p-3">${p.product_id}</td>
+        <td class="p-3">${p.name}</td>
+        <td class="p-3">${p.quantity}</td>
+        <td class="p-3">${p.price}</td>
+        <td class="p-3">${p.category_id}</td>
+        <td class="p-3 text-center space-x-2">
+          <button onclick="editProd(${p.product_id}, '${p.name}', ${p.quantity}, ${p.price}, ${p.category_id})"
+            class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded transition">Edit</button>
+          <button onclick="deleteProd(${p.product_id})"
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+form.onsubmit = async e => {
+  e.preventDefault();
+  const productData = {
+    name: nameInput.value.trim(),
+    quantity: Number(quantityInput.value),
+    price: Number(priceInput.value),
+    category_id: Number(categoryInput.value)
+  };
+  if (!productData.name) return alert('Enter product name');
+
+  if (editId) {
+    await fetch(`/api/products/${editId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productData)
+    });
+    editId = null;
+    submitBtn.textContent = 'Add Product';
+    cancelBtn.classList.add('hidden');
+  } else {
+    await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productData)
+    });
+  }
+
+  form.reset();
+  loadProducts();
+};
+
+cancelBtn.onclick = () => {
+  editId = null;
+  form.reset();
+  submitBtn.textContent = 'Add Product';
+  cancelBtn.classList.add('hidden');
+};
+
+
+function editProd(id, name, quantity, price, category_id) {
+  editId = id;
+  nameInput.value = name;
+  quantityInput.value = quantity;
+  priceInput.value = price;
+  categoryInput.value = category_id;
+  submitBtn.textContent = 'Update Product';
+  cancelBtn.classList.remove('hidden');
+  nameInput.focus();
+}
+
+
+async function deleteProd(id) {
+  if(!confirm('Are you sure?')) return;
+  await fetch(`/api/products/${id}`, { method:'DELETE' });
+  loadProducts();
+}
+
+
+loadProducts();
+</script>
+
+</body>
+</html>

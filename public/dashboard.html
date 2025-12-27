@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventory Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+<nav class="bg-blue-600 p-4 text-white font-bold text-xl">
+  Inventory Management System
+</nav>
+
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="bg-white p-6 rounded shadow">
+    <h2 class="text-lg font-semibold">Total Categories</h2>
+    <p id="totalCategories" class="text-3xl text-blue-600">0</p>
+  </div>
+
+  <div class="bg-white p-6 rounded shadow">
+    <h2 class="text-lg font-semibold">Total Products</h2>
+    <p id="totalProducts" class="text-3xl text-green-600">0</p>
+  </div>
+</div>
+
+<script>
+async function loadStats() {
+  const c = await fetch('/api/categories');
+  const p = await fetch('/api/products');
+  document.getElementById('totalCategories').innerText = (await c.json()).length;
+  document.getElementById('totalProducts').innerText = (await p.json()).length;
+}
+loadStats();
+</script>
+
+</body>
+</html>
